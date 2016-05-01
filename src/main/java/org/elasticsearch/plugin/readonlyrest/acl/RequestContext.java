@@ -2,13 +2,10 @@ package org.elasticsearch.plugin.readonlyrest.acl;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ObjectArrays;
-import com.google.common.io.ByteArrayDataInput;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.CompositeIndicesRequest;
 import org.elasticsearch.action.IndicesRequest;
 import org.elasticsearch.common.bytes.BytesArray;
-import org.elasticsearch.common.io.stream.ByteBufferStreamInput;
-import org.elasticsearch.common.io.stream.InputStreamStreamInput;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.http.netty.NettyHttpRequest;
@@ -16,7 +13,6 @@ import org.elasticsearch.plugin.readonlyrest.SecurityPermissionException;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestRequest;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -81,17 +77,17 @@ public class RequestContext {
                 new PrivilegedAction<Void>() {
                     @Override
                     public Void run() {
-                        logger.info("Running privileged request content: " + newContent);
+                        logger.debug("Running privileged request content: " + newContent);
 
                         RestRequest rr = request;
-                        logger.info("Setting request content: " + newContent);
+                        logger.debug("Setting request content: " + newContent);
                         if (rr instanceof NettyHttpRequest) {
                             try {
                                 BytesArray ba = new BytesArray(newContent);
                                 Field f = NettyHttpRequest.class.getDeclaredField("content");
                                 f.setAccessible(true);
                                 f.set(rr, ba);
-                                logger.info("Request updated: " + rr.content().toUtf8());
+                                logger.debug("Request updated: " + rr.content().toUtf8());
 
                             } catch (NoSuchFieldException | IllegalAccessException e) {
                                 logger.error("Could not apply new content", e);
@@ -99,7 +95,6 @@ public class RequestContext {
                             }
                         } else {
                             logger.error("The RestRequest class is " + rr.getClass().getName());
-                            logger.info("The RestRequest class is " + rr.getClass().getName());
                         }
                         return null;
                     }
