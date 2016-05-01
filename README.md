@@ -2,6 +2,15 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/grade/9ef51ae1e6e34deba913f22e2e4cbd56)](https://www.codacy.com/app/scarduzio/elasticsearch-readonlyrest-plugin)
 [![Build Status](https://travis-ci.org/sscarduzio/elasticsearch-readonlyrest-plugin.svg?branch=master)](https://travis-ci.org/sscarduzio/elasticsearch-readonlyrest-plugin)
 
+# WARNING
+
+This fork contains a Index Mapping additional rule which allows replacing one index by another
+
+Use case: In order to share the same dashboard in Kibana between several users to some reduced part of a unique index, we
+use filtered index. By giving the index accessibility to all users, we can then restricted the queries to use only the
+filtered index.
+
+
 # Readonly REST Elasticsearch Plugin
 Expose the high performance HTTP server embedded in Elasticsearch directly to the public, safely blocking any attempt to delete or modify your data.
 

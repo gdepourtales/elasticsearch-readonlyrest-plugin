@@ -5,11 +5,12 @@ import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.plugin.readonlyrest.acl.RequestContext;
 import org.elasticsearch.plugin.readonlyrest.acl.RuleConfigurationError;
-import org.elasticsearch.plugin.readonlyrest.acl.blocks.rules.impl.*;
 import org.elasticsearch.plugin.readonlyrest.acl.blocks.rules.Rule;
-import org.elasticsearch.plugin.readonlyrest.acl.blocks.rules.RuleNotConfiguredException;
 import org.elasticsearch.plugin.readonlyrest.acl.blocks.rules.RuleExitResult;
+import org.elasticsearch.plugin.readonlyrest.acl.blocks.rules.RuleNotConfiguredException;
+import org.elasticsearch.plugin.readonlyrest.acl.blocks.rules.impl.*;
 
+import java.io.IOException;
 import java.util.Set;
 
 /**
@@ -22,6 +23,7 @@ public class Block {
   private final Policy policy;
   private boolean authHeaderAccepted = false;
   private Set<Rule> conditionsToCheck = Sets.newHashSet();
+  private IndexMapping indexMapping = null;
 
   public Block(Settings s, ESLogger logger) {
     this.name = s.get("name");
@@ -31,49 +33,54 @@ public class Block {
       throw new RuleConfigurationError("The field \"type\" is mandatory and should be either of " + Block.Policy.valuesString() + ". If this field is correct, check the YAML indentation is correct.", null);
     }
 
+    try {
+        indexMapping = new IndexMapping(s.getAsSettings("index_mapping"), logger);
+    } catch (RuleNotConfiguredException ignored) {
+    }
 
     policy = Block.Policy.valueOf(sPolicy.toUpperCase());
 
     // Won't add the condition if its configuration is not found
     try {
       conditionsToCheck.add(new HostsRule(s));
-    } catch (RuleNotConfiguredException e) {
+    } catch (RuleNotConfiguredException ignored) {
     }
     try {
       conditionsToCheck.add(new ApiKeysRule(s));
-    } catch (RuleNotConfiguredException e) {
+    } catch (RuleNotConfiguredException ignored) {
     }
     try {
       conditionsToCheck.add(new AuthKeyRule(s));
       authHeaderAccepted = true;
-    } catch (RuleNotConfiguredException e) {
+    } catch (RuleNotConfiguredException ignored) {
     }
     try {
       conditionsToCheck.add(new UriReRule(s));
-    } catch (RuleNotConfiguredException e) {
+    } catch (RuleNotConfiguredException ignored) {
     }
     try {
       conditionsToCheck.add(new MaxBodyLengthRule(s));
-    } catch (RuleNotConfiguredException e) {
+    } catch (RuleNotConfiguredException ignored) {
     }
     try {
       conditionsToCheck.add(new MethodsRule(s));
-    } catch (RuleNotConfiguredException e) {
+    } catch (RuleNotConfiguredException ignored) {
     }
     try {
       conditionsToCheck.add(new KibanaAccessRule(s));
-    } catch (RuleNotConfiguredException e) {
+    } catch (RuleNotConfiguredException ignored) {
     }
     try {
       conditionsToCheck.add(new IndicesRule(s));
-    } catch (RuleNotConfiguredException e) {
+    } catch (RuleNotConfiguredException ignored) {
     }
     try {
       conditionsToCheck.add(new ActionsRule(s));
-    } catch (RuleNotConfiguredException e) {
-    } try {
+    } catch (RuleNotConfiguredException ignored) {
+    }
+    try {
       conditionsToCheck.add(new ScriptRule(s));
-    } catch (RuleNotConfiguredException e) {
+    } catch (RuleNotConfiguredException ignored) {
     }
   }
 
@@ -122,6 +129,12 @@ public class Block {
     logger.debug("[" + name + "] request matches no rules, forbidden by default: req: " + rc);
 
     return BlockExitResult.NO_MATCH;
+  }
+
+  public void applyIndexMapping(RequestContext rc) throws IOException {
+    if (indexMapping != null) {
+      indexMapping.apply(rc);
+    }
   }
 
   @Override

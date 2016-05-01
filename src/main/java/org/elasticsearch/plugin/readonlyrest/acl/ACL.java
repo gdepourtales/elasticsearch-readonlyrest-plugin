@@ -6,6 +6,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.plugin.readonlyrest.acl.blocks.Block;
 import org.elasticsearch.plugin.readonlyrest.acl.blocks.BlockExitResult;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
@@ -46,6 +47,11 @@ public class ACL {
       BlockExitResult result = b.check(rc);
       if (result.isMatch()) {
         logger.debug("Block " + b.getName() + " has matched: " + result);
+        try {
+          b.applyIndexMapping(rc);
+        } catch (IOException e) {
+          logger.error("Error applying index mapping", e);
+        }
         return result;
       }
     }
