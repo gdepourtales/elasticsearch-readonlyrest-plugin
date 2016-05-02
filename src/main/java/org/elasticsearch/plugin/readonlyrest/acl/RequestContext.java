@@ -6,12 +6,17 @@ import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.CompositeIndicesRequest;
 import org.elasticsearch.action.IndicesRequest;
 import org.elasticsearch.common.bytes.BytesArray;
+import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.bytes.ChannelBufferBytesReference;
+import org.elasticsearch.common.bytes.PagedBytesReference;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.http.netty.NettyHttpRequest;
 import org.elasticsearch.plugin.readonlyrest.SecurityPermissionException;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestRequest;
+import org.jboss.netty.buffer.ChannelBufferFactory;
+import org.jboss.netty.buffer.DirectChannelBufferFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -73,6 +78,7 @@ public class RequestContext {
     public void setContent(final String newContent) throws IOException {
         this.content = newContent;
         logger.info("Setting request content: " + newContent);
+
         AccessController.doPrivileged(
                 new PrivilegedAction<Void>() {
                     @Override
@@ -83,10 +89,11 @@ public class RequestContext {
                         logger.debug("Setting request content: " + newContent);
                         if (rr instanceof NettyHttpRequest) {
                             try {
-                                BytesArray ba = new BytesArray(newContent);
+                                byte[] bytes = newContent.getBytes();
+                                BytesReference br = new ChannelBufferBytesReference(DirectChannelBufferFactory.getInstance().getBuffer(bytes, 0, bytes.length));
                                 Field f = NettyHttpRequest.class.getDeclaredField("content");
                                 f.setAccessible(true);
-                                f.set(rr, ba);
+                                f.set(rr, br);
                                 logger.debug("Request updated: " + rr.content().toUtf8());
 
                             } catch (NoSuchFieldException | IllegalAccessException e) {

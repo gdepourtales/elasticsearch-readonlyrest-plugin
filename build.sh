@@ -1,5 +1,5 @@
 #!/bin/bash
-mvn clean package
+#mvn clean package
 
 ES_VERSION=`grep '<elasticsearch.version' pom.xml | sed 's|</b>|-|g' | sed 's|<[^>]*>||g' |xargs`
 
